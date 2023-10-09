@@ -1,0 +1,209 @@
+/*
+
+Assignment name  : count_island
+Expected files   : *.c, *.h
+Allowed functions: open, close, read, write, malloc, free
+--------------------------------------------------------------------------------
+Write a program that takes a file that contains lines of equal length. Those
+lines contain characters that are either '.' or 'X'. All those lines put
+together form rectangles of '.' containing "islands" of 'X'.
+The maximum size of a line is 1024 characters, including the terminating
+newline.
+A column if formed of the set of characters in the file that are separated from
+the start of their respective lines by the same number of characters.
+Two characters are said to be touching if they are contiguous and on the same
+line, or on contiguous lines and on the same column.
+An "island" of 'X' means a set of 'X' touching each other.
+The program must walk though the file and display it after replacing all the
+'X' by a number corresponding to the position their island appears in the file,
+starting at the beginning of the file.
+There can be only one result.
+If the file is empty, or there is an error (Incoherent input, for example), or
+no parameters are passed, the program must display a newline.
+The file contains at most 10 islands.
+You will find examples in the subject directory.
+Examples:
+$>cat toto
+.................XXXXXXXX..........................................
+....................XXXXXXXXX.......XXXXXXXX.......................
+.................XXXXXXXX..............XXX...XXXXX.................
+.....................XXXXXX.....X...XXXXXXXXXXX....................
+................................X..................................
+......XXXXXXXXXXXXX.............X..................................
+..................X.............XXXXXXXXX..........................
+..................X.........XXXXXXXXXXXX...........................
+..................X................................................
+XX.............................................................XXXX
+XX..................XXXXXXXXXXXXX.................................X
+...................................................................
+.................................................................X.
+.....................XXXXX.......................................XX
+$>
+$>./count_island toto
+.................00000000..........................................
+....................000000000.......11111111.......................
+.................00000000..............111...11111.................
+.....................000000.....2...11111111111....................
+................................2..................................
+......3333333333333.............2..................................
+..................3.............222222222..........................
+..................3.........222222222222...........................
+..................3................................................
+44.............................................................5555
+44..................6666666666666.................................5
+...................................................................
+.................................................................7.
+.....................88888.......................................77
+$>
+$>cat qui_est_la
+...................................................................
+...X........X.....XXXXX......XXXXXXX...XXXXXXXXXX..XXXXXXXXXX......
+...XX......XX....XX...XX....XX.....XX.....XXXX.....XXXXXXXXXX......
+...XXXX..XXXX...XX.....XX...XX.....XX......XX......XX..............
+...XX.XXXX.XX...XX.....XX...XX.....XX......XX......XX..............
+...XX...X..XX...XX.....XX...XXXXXXXX.......XX......XXXXX...........
+...XX......XX...XXXXXXXXX...XXXX...........XX......XXXXX...........
+...XX......XX..XX.......XX..XX.XX..........XX......XX..............
+...XX......XX..XX.......XX..XX...X.........XX......XX..............
+...XX......XX..XX.......XX..XX....X......XXXXXX....XXXXXXXXXX......
+...XX......XX.XX.........XX.XX.....XX..XXXXXXXXXX..XXXXXXXXXX..X...
+...................................................................
+$>
+$>./count_island qui_est_la
+...................................................................
+...0........0.....11111......2222222...3333333333..4444444444......
+...00......00....11...11....22.....22.....3333.....4444444444......
+...0000..0000...11.....11...22.....22......33......44..............
+...00.0000.00...11.....11...22.....22......33......44..............
+...00...0..00...11.....11...22222222.......33......44444...........
+...00......00...111111111...2222...........33......44444...........
+...00......00..11.......11..22.22..........33......44..............
+...00......00..11.......11..22...5.........33......44..............
+...00......00..11.......11..22....6......333333....4444444444......
+...00......00.11.........11.22.....77..3333333333..4444444444..8...
+...................................................................
+$>
+$>cat -e rien
+$>./count_island rien | cat -e
+$
+$>
+
+*/
+
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+#include <stdio.h>
+
+static bool	is_valid(int y, int x, char **map, int rows, int nb_cols)
+{
+	int	cols = nb_cols;
+
+	if (y >= 0 && y < rows && x >= 0 && x < cols
+		&& (map[y][x] == 'X'))
+		return (true);
+	return (false);
+}
+
+void	flood_fill(int y, int x, char **map, bool *is_enclosed, int nb_rows, int nb_cols)
+{
+	int	rows = nb_rows;
+	int	cols = nb_cols;
+
+	if (y == 0 || y == rows - 1 || x == 0 || x == cols - 1)
+	{
+		*is_enclosed = false;
+		return ;
+	}
+	map[y][x] = '0';
+	if (is_valid(y - 1, x, map, rows, cols))
+		flood_fill(y - 1, x, map, is_enclosed, rows, cols);
+	if (is_valid(y + 1, x, map, rows, cols))
+		flood_fill(y + 1, x, map, is_enclosed, rows, cols);
+	if (is_valid(y, x - 1, map, rows, cols))
+		flood_fill(y, x - 1, map, is_enclosed, rows, cols);
+	if (is_valid(y, x + 1, map, rows, cols))
+		flood_fill(y, x + 1, map, is_enclosed, rows, cols);
+}
+
+int	count_cols(char *str) {
+	int i = 0;
+	while (str[i] != '\n')
+		i++;
+	return i;
+}
+
+int	count_rows(char *str) {
+	int i = 0;
+	int	newLineCount = 0;
+	while (str[i]) {
+		// printf("%c", buff[i]);
+		if (str[i] != '\n') {
+			// printf("%c", buff[i]);
+		} else {
+			// printf("\n");
+			newLineCount++;
+		}
+		i++;
+	}
+	return newLineCount;
+}
+
+int	main(int argc, char **argv) {
+	char buff[1024];
+	if (argc != 2)
+		return 1;
+	int fd = open(argv[1], O_RDONLY);
+	if (fd < 0)
+		return 1;
+	int nbytes = 0;
+	nbytes = read(fd, buff, 1024);
+	if (nbytes == 0) {
+		write(1, "\n", 1);
+		return 1;
+	}
+	while (nbytes > 0) {
+		nbytes = read(fd, buff, 1024);
+		// buff[nbytes] = '\0';
+	}
+	close(fd);
+	int newLineCount = count_rows(buff);
+	int	lineLen = count_cols(buff);
+	printf("NL: %d, len: %d\n", newLineCount, lineLen);
+	char **map = (char **)malloc(sizeof(char *) * (newLineCount + 1));
+	int y = 0;
+	while (y < newLineCount) {
+		map[y] = malloc(lineLen + 1 * sizeof(char));
+		y++;
+	}
+	int n = 0;
+	int	row = 0;
+	int	col = 0;
+	int eof = newLineCount * (lineLen + 1);
+	while (buff[n] && n < eof) {
+		// printf("%c", buff[n]);
+		if (buff[n] != '\n') {
+			// printf("%c", buff[i]);
+			map[row][col] = buff[n];
+			// printf("map[%d][%d] = %c\n", row, col, map[row][col]);
+			col++;
+		} else {
+			// printf("\n");
+			map[row][col] = '\0';
+			row++;
+			col = 0;
+		}
+		n++;
+	}
+	flood_fill(5, 8, map, false, row, col);
+	int q = 0;
+	while (q < newLineCount) {
+		printf("%s\n", map[q]);
+		q++;
+	}
+	return 0;
+}
