@@ -1,3 +1,105 @@
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdbool.h>
+
+#define BUFFERSIZE 1024*1024
+
+void dfs(char map[BUFFERSIZE], int size, int cols, int i, char count) {
+
+	// check if we are still in the map and that the current element is 'X'
+    if (!i || i < 0 || i > size || map[i] != 'X')
+        return ;
+
+	// replace current element with the appropriate value
+    map[i] = count;
+
+	// perform dfs on surrounding elements
+    dfs(map, size, cols, i - cols, count); // previous row
+    dfs(map, size, cols, i + cols, count); // following row
+    dfs(map, size, cols, i - 1, count); // previous col
+    dfs(map, size, cols, i + 1, count); // following col
+}
+
+bool get_size(char map[BUFFERSIZE], int *cols) {
+    int same_len = 1;
+
+	// loop over each char of the map
+    for (int i = 0; map[i]; i++) {
+
+		// if map contains invalid char
+        if (!(map[i] == 'X' || map[i] == '.' || map[i] == '\n'))
+            return false;
+		
+		// if newline
+        if (map[i] == '\n') {
+
+			// if cols is 0 set to same_len
+            if(!(*cols))
+                (*cols) = same_len;
+
+			// if cols is diff than same_len (diff len lines)
+            if(*(cols) != same_len)
+                return false;
+
+			// reset same_len
+            same_len = 0;
+        }
+		// increment line len
+        same_len++;
+    }
+    return true;
+}
+
+bool count_islands(char *file) {
+    int fd;
+    int size;
+    int cols = 0;
+    char map[BUFFERSIZE] = {0};
+    
+	// open file
+    if ((fd = open(file, O_RDONLY)) == -1)
+        return false;
+	
+	// read file + null-term
+    if (!(size = read(fd, map, BUFFERSIZE)))
+        return false;
+    map[size] = '\0';
+
+	// check if each line is the same len + set col size and has only valid char
+    if (!(get_size(map, &cols)))
+        return false;
+
+	printf("cols = %d\n", cols);
+
+	// start at '0' char
+    char count = '0';
+
+	// loop over char in the map until reach map size
+    for (int i = 0; i < size; i++) {
+
+		// if char to be replaced is found
+        if (map[i] == 'X') {
+
+			// perform dfs
+            dfs(map, size, cols, i, count);
+
+			// increment count to next value (1 - 2 - 3 - ...)
+            count++;
+        }
+    }
+
+	// display the new map
+    write(1, map, size);
+    return true;
+}
+
+int main(int argc , char *argv[]) {
+	if (argc != 2 || !count_islands(argv[1]))
+		write(1,"\n",1);
+	return 0;
+}
+
 /*
 
 Assignment name  : count_island
@@ -89,121 +191,3 @@ $
 $>
 
 */
-
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
-#include <stdio.h>
-
-static bool	is_valid(int y, int x, char **map, int rows, int nb_cols)
-{
-	int	cols = nb_cols;
-
-	if (y >= 0 && y < rows && x >= 0 && x < cols
-		&& (map[y][x] == 'X'))
-		return (true);
-	return (false);
-}
-
-void	flood_fill(int y, int x, char **map, bool *is_enclosed, int nb_rows, int nb_cols)
-{
-	int	rows = nb_rows;
-	int	cols = nb_cols;
-
-	if (y == 0 || y == rows - 1 || x == 0 || x == cols - 1)
-	{
-		*is_enclosed = false;
-		return ;
-	}
-	map[y][x] = '0';
-	if (is_valid(y - 1, x, map, rows, cols))
-		flood_fill(y - 1, x, map, is_enclosed, rows, cols);
-	if (is_valid(y + 1, x, map, rows, cols))
-		flood_fill(y + 1, x, map, is_enclosed, rows, cols);
-	if (is_valid(y, x - 1, map, rows, cols))
-		flood_fill(y, x - 1, map, is_enclosed, rows, cols);
-	if (is_valid(y, x + 1, map, rows, cols))
-		flood_fill(y, x + 1, map, is_enclosed, rows, cols);
-}
-
-int	count_cols(char *str) {
-	int i = 0;
-	while (str[i] != '\n')
-		i++;
-	return i;
-}
-
-int	count_rows(char *str) {
-	int i = 0;
-	int	newLineCount = 0;
-	while (str[i]) {
-		// printf("%c", buff[i]);
-		if (str[i] != '\n') {
-			// printf("%c", buff[i]);
-		} else {
-			// printf("\n");
-			newLineCount++;
-		}
-		i++;
-	}
-	return newLineCount;
-}
-
-int	main(int argc, char **argv) {
-	char buff[1024];
-	if (argc != 2)
-		return 1;
-	int fd = open(argv[1], O_RDONLY);
-	if (fd < 0)
-		return 1;
-	int nbytes = 0;
-	nbytes = read(fd, buff, 1024);
-	if (nbytes == 0) {
-		write(1, "\n", 1);
-		return 1;
-	}
-	while (nbytes > 0) {
-		nbytes = read(fd, buff, 1024);
-		// buff[nbytes] = '\0';
-	}
-	close(fd);
-	int newLineCount = count_rows(buff);
-	int	lineLen = count_cols(buff);
-	printf("NL: %d, len: %d\n", newLineCount, lineLen);
-	char **map = (char **)malloc(sizeof(char *) * (newLineCount + 1));
-	int y = 0;
-	while (y < newLineCount) {
-		map[y] = malloc(lineLen + 1 * sizeof(char));
-		y++;
-	}
-	int n = 0;
-	int	row = 0;
-	int	col = 0;
-	int eof = newLineCount * (lineLen + 1);
-	while (buff[n] && n < eof) {
-		// printf("%c", buff[n]);
-		if (buff[n] != '\n') {
-			// printf("%c", buff[i]);
-			map[row][col] = buff[n];
-			// printf("map[%d][%d] = %c\n", row, col, map[row][col]);
-			col++;
-		} else {
-			// printf("\n");
-			map[row][col] = '\0';
-			row++;
-			col = 0;
-		}
-		n++;
-	}
-	flood_fill(5, 8, map, false, row, col);
-	int q = 0;
-	while (q < newLineCount) {
-		printf("%s\n", map[q]);
-		q++;
-	}
-	return 0;
-}

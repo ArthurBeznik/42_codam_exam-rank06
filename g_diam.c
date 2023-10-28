@@ -1,3 +1,113 @@
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+
+static int ref;
+
+void ft_putnbr(int num) {
+    char c;
+    
+    if (num >= 10)
+        ft_putnbr(num / 10);
+    c = num % 10 + '0';
+    write(1, &c, 1);
+}
+
+void print_matrix(int max, int arr[max][max]) {
+    int i, j;
+
+    for (i = 0 ; i < max; i++) {
+        for (j = 0 ; j < max; j++)
+            printf("%i ", arr[i][j]);
+        printf("\n");
+    }
+}
+
+void longest_path(int max, int arr[max][max], int visited[max], int r, int length) {
+    visited[r] = 1;
+    int i;
+    for (i = 0; i < max; i++) {
+        if (!visited[i] && arr[r][i]) {
+            ref = (ref < length + 1) ? length + 1 : ref;
+            longest_path(max, arr, visited, i, length + 1);
+        }
+    }
+    visited[r] = 0;
+}
+
+void solve_matrix(int max, char *s) {
+    int i, j;
+    int arr[max][max];
+    int visited[max];
+    for (i = 0; i < max; i++)
+        for (j = 0; j < max; j++)
+        	arr[i][j] = 0;
+    for (j = 0; j < max; j++)
+        visited[j] = 0;
+    while(*s) {
+        i = ft_atoi(&s);
+        j = ft_atoi(&s);
+        arr[i][j] = 1;
+        arr[j][i] = 1;
+    }
+    ref = 2;
+    for (i = 0; i < max; i++)
+        longest_path(max, arr, visited, i, 1);
+}
+
+bool ft_isdigit(char c) {
+    if (c >= '0' && c <= '9')
+        return true;
+    return false;
+}
+
+int ft_atoi(char **s) {
+    int num = 0;
+    while (ft_isdigit(**s)) {
+        num = num * 10 + **s - '0';
+        (*s)++;
+    }
+    if (**s)
+        (*s)++;
+    return num;
+}
+
+int find_max(char *s) {
+    int max = 0;
+    int num = 0;
+
+	// loop over string
+    while (*s) {
+
+		// convert current element to int
+        num = ft_atoi(&s);
+
+		// compare current num to max, and set accordingly
+        max = num > max ? num : max;
+    }
+    return max;
+}
+
+int main (int argc, char **argv) {
+    if (argc == 2) {
+		// store input in string
+        char *s = argv[1];
+
+		// find max
+        int max = find_max(s);
+        printf("max = %d\n", max);
+
+		// 
+        solve_matrix(max + 1, s);
+
+		// 
+        ft_putnbr(ref);
+    }
+    write(1, "\n", 1);
+    return 0;
+}
+
 /*
 
 Assignment name  : g_diam
@@ -24,26 +134,3 @@ $>./g_diam "1-2 2-3 4-5 5-6 6-7 7-8 9-13 13-10 10-2 10-11 11-12 12-8 16-4 16-11 
 15$
 
 */
-
-#include <stdlib.h>
-#include <unistd.h>
-
-#include <stdio.h>
-
-void	g_diam(char *str) {
-	if (!str) {
-		write(1, "\n", 1);
-		return ;
-	}
-	int i = 0;
-	while (str[i]) {
-		printf("%c\n", str[i]);
-		i++;
-	}
-}
-
-int main(int argc, char **argv) {
-	if (argc != 2)
-		write(1, "\n", 1);
-	g_diam(argv[1]);
-}
