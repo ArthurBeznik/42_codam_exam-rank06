@@ -5,91 +5,116 @@
 
 #define BUFFERSIZE 1024*1024
 
-void dfs(char map[BUFFERSIZE], int size, int cols, int i, char count) {
+static int arr[10];
 
-	// check if we are still in the map and that the current element is 'X'
+// error check i and map
+// replace current element with count
+// dfs surrounding elements
+void dfs(char map[BUFFERSIZE], int size, int cols, int i, char count) {
     if (!i || i < 0 || i > size || map[i] != 'X')
         return ;
 
-	// replace current element with the appropriate value
     map[i] = count;
+	// printf("%d\n", count - 48);
+	arr[count - 48] += 1;
 
-	// perform dfs on surrounding elements
-    dfs(map, size, cols, i - cols, count); // previous row
-    dfs(map, size, cols, i + cols, count); // following row
-    dfs(map, size, cols, i - 1, count); // previous col
-    dfs(map, size, cols, i + 1, count); // following col
+    dfs(map, size, cols, i - cols, count);
+    dfs(map, size, cols, i + cols, count);
+    dfs(map, size, cols, i - 1, count);
+    dfs(map, size, cols, i + 1, count);
 }
 
+//	init same_len to 1
+//	loop over map element
+//		check if invalid char => return false
+//		check if newline
+//			check if cols is not set => set it to same_len
+//			check if cols is diff than same_len => return false (one line has a diff len from the rest)
+//			reset same_len to 0
+//		increment same_len
+//	return true
 bool get_size(char map[BUFFERSIZE], int *cols) {
     int same_len = 1;
 
-	// loop over each char of the map
     for (int i = 0; map[i]; i++) {
-
-		// if map contains invalid char
         if (!(map[i] == 'X' || map[i] == '.' || map[i] == '\n'))
             return false;
 		
-		// if newline
         if (map[i] == '\n') {
-
-			// if cols is 0 set to same_len
-            if(!(*cols))
+            if (!(*cols))
                 (*cols) = same_len;
 
-			// if cols is diff than same_len (diff len lines)
-            if(*(cols) != same_len)
+            if (*(cols) != same_len)
                 return false;
 
-			// reset same_len
             same_len = 0;
         }
-		// increment line len
         same_len++;
     }
     return true;
 }
 
+//	init fd, size, cols (= 0) and map[BUFSIZE] = {0}
+//	open file + error check
+//	read map + error check
+//	null-term map[size]
+//	check if not get_size => return false
+//	init count to '0' (starting char)
+//	loop over map size
+//		if map[i] is X
+//			dfs
+//			increment count
+//	write map
+//	return true
 bool count_islands(char *file) {
     int fd;
     int size;
     int cols = 0;
     char map[BUFFERSIZE] = {0};
+	bool replaced = false;
     
-	// open file
     if ((fd = open(file, O_RDONLY)) == -1)
         return false;
 	
-	// read file + null-term
     if (!(size = read(fd, map, BUFFERSIZE)))
         return false;
     map[size] = '\0';
 
-	// check if each line is the same len + set col size and has only valid char
     if (!(get_size(map, &cols)))
         return false;
 
-	printf("cols = %d\n", cols);
-
-	// start at '0' char
     char count = '0';
-
-	// loop over char in the map until reach map size
+	int curr = 0;
+	arr[count] = 0;
     for (int i = 0; i < size; i++) {
-
-		// if char to be replaced is found
         if (map[i] == 'X') {
-
-			// perform dfs
+			replaced = true;
             dfs(map, size, cols, i, count);
-
-			// increment count to next value (1 - 2 - 3 - ...)
             count++;
         }
     }
 
-	// display the new map
+	printf("%d\n", arr[0]);
+	printf("%d\n", arr[1]);
+	printf("%d\n", arr[2]);
+	printf("%d\n", arr[3]);
+	printf("%d\n", arr[4]);
+	printf("%d\n", arr[5]);
+	printf("%d\n", arr[6]);
+	printf("%d\n", arr[7]);
+
+	int max = 0;
+	int num = 0;
+	for (int i = 0; i < 10; i++) {
+		num = arr[i];
+		max = num > max ? num : max;
+	}
+
+	printf("%d\n", max);
+
+	if (!replaced)
+		return false;
+
     write(1, map, size);
     return true;
 }

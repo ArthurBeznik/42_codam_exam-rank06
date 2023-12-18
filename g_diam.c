@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-static int ref;
+static int ref;  // Static variable to store the reference value
 
 void ft_putnbr(int num) {
     char c;
@@ -11,47 +11,70 @@ void ft_putnbr(int num) {
     if (num >= 10)
         ft_putnbr(num / 10);
     c = num % 10 + '0';
-    write(1, &c, 1);
+    write(1, &c, 1);  // Recursive function to print a number character by character
 }
 
 void print_matrix(int max, int arr[max][max]) {
     int i, j;
 
-    for (i = 0 ; i < max; i++) {
-        for (j = 0 ; j < max; j++)
+    for (i = 0; i < max; i++) {
+        for (j = 0; j < max; j++)
             printf("%i ", arr[i][j]);
         printf("\n");
     }
 }
 
+// set visited[r] to 1 (mark current node as visited)
+// init int i
+// for loop until max
+//	if visited[i] = 0 && arr[r][i] = 1 (not visited yet and existing link)
+//		compare ref and length + 1 and set ref accordingly
+//		
 void longest_path(int max, int arr[max][max], int visited[max], int r, int length) {
     visited[r] = 1;
     int i;
+
     for (i = 0; i < max; i++) {
         if (!visited[i] && arr[r][i]) {
-            ref = (ref < length + 1) ? length + 1 : ref;
-            longest_path(max, arr, visited, i, length + 1);
+            ref = (ref < length + 1) ? length + 1 : ref;  // Update the reference value
+            longest_path(max, arr, visited, i, length + 1);  // Recursive call to explore the path
         }
     }
-    visited[r] = 0;
+
+    visited[r] = 0;  // Reset the visited status for backtracking
 }
 
+// init i, j, arr[max][max], visited[max]
+// for loop until max
+//	zero fill arr[i][j] with 0
+// for loop until max
+//	fill visited[j] with 0
+// while loop over *s
+//	convert &s into i
+//	convert &s into j
+//	set arr[i][j] and arr[j][i] to 1 (mark links between nb)
+// set ref to 2
+// for loop until max
+//	longest_path() max, arr, visited, i, 1
 void solve_matrix(int max, char *s) {
     int i, j;
     int arr[max][max];
     int visited[max];
+
     for (i = 0; i < max; i++)
+        visited[i] = 0;
         for (j = 0; j < max; j++)
-        	arr[i][j] = 0;
-    for (j = 0; j < max; j++)
-        visited[j] = 0;
-    while(*s) {
+            arr[i][j] = 0;
+
+    while (*s) {
         i = ft_atoi(&s);
         j = ft_atoi(&s);
         arr[i][j] = 1;
         arr[j][i] = 1;
     }
+
     ref = 2;
+
     for (i = 0; i < max; i++)
         longest_path(max, arr, visited, i, 1);
 }
@@ -62,6 +85,12 @@ bool ft_isdigit(char c) {
     return false;
 }
 
+// while loop over **s
+//	convert curr char (if is digit) to nb
+//	increment *s
+// if **s (= '-')
+//	increment *s
+// return num
 int ft_atoi(char **s) {
     int num = 0;
     while (ft_isdigit(**s)) {
@@ -73,40 +102,40 @@ int ft_atoi(char **s) {
     return num;
 }
 
+// while loop over *s
+//	convert str to nb
+//	compare num and max and set max
+// return max
 int find_max(char *s) {
     int max = 0;
     int num = 0;
 
-	// loop over string
     while (*s) {
-
-		// convert current element to int
         num = ft_atoi(&s);
-
-		// compare current num to max, and set accordingly
         max = num > max ? num : max;
     }
     return max;
 }
 
-int main (int argc, char **argv) {
+// if argc is 2
+//	store input in char *s
+//	find max in s
+//	solve matrix with max + 1 as size
+//	put nb ref (longest chain)
+// print newline
+// return
+int main(int argc, char **argv) {
     if (argc == 2) {
-		// store input in string
         char *s = argv[1];
 
-		// find max
         int max = find_max(s);
-        printf("max = %d\n", max);
-
-		// 
         solve_matrix(max + 1, s);
-
-		// 
         ft_putnbr(ref);
     }
     write(1, "\n", 1);
     return 0;
 }
+
 
 /*
 
